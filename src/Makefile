@@ -14,7 +14,8 @@ clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
 
 zc_deploy:
-	cp ac_zc.ko /lib/modules/$(shell uname -r)/extra
+	mkdir -p /lib/modules/$(shell uname -r)/extra/
+	cp ac_zc.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 zc_stop:
@@ -26,7 +27,8 @@ zc_start:
 zc_restart: zc_stop zc_start
 
 dimmer_deploy:
-	cp ac_dimmer.ko /lib/modules/$(shell uname -r)/extra
+	mkdir -p /lib/modules/$(shell uname -r)/extra/
+	cp ac_dimmer.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 dimmer_stop:
@@ -38,7 +40,8 @@ dimmer_start:
 dimmer_restart: dimmer_stop dimmer_start
 
 button_deploy:
-	cp ac_button.ko /lib/modules/$(shell uname -r)/extra
+	mkdir -p /lib/modules/$(shell uname -r)/extra/
+	cp ac_button.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 button_stop:
