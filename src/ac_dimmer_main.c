@@ -30,17 +30,6 @@ static int ac_zc_id = -1;
 
 static struct hrtimer hr_timer;
 
-// Redefinition of macro to enable permissions to world
-#define __ATTR_NOCHECK(_name, _mode, _show, _store) {                   \
-        .attr = {.name = __stringify(_name),                            \
-                 .mode =_mode },                                        \
-        .show   = _show,                                                \
-        .store  = _store,                                               \
-}
-
-#define DEVICE_ATTR_NOCHECK(_name, _mode, _show, _store) \
-        struct device_attribute dev_attr_##_name = __ATTR_NOCHECK(_name, _mode, _show, _store)
-
 /* dimmer_desc
  *
  * This structure maintains the information regarding a
@@ -185,7 +174,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	status = gpio_direction_output(gpio,0);
 	if(status < 0)
 		goto done;
-  
+
 	status = dimmer_export(gpio);
 	if(status < 0)
 		goto done;
@@ -274,7 +263,7 @@ int dimmer_unexport(unsigned int gpio)
 	struct dimmer_desc *desc;
 	struct device   *dev;
 	int             status;
-      
+
 	mutex_lock(&sysfs_lock);
 
 	desc = &dimmer_table[gpio];
@@ -314,10 +303,10 @@ enum hrtimer_restart ac_dimmer_hrtimer_callback(struct hrtimer *timer)
 		desc = &dimmer_table[gpio];
 		if(!test_bit(FLAG_ACDIMMER, &desc->flags))
 			continue;
-		
+
 		if(desc->next_tick.tv64 == 0)
 			continue;
-		
+
 		// trigger
 		if(desc->next_tick.tv64 <= now.tv64)
 		{
@@ -336,7 +325,7 @@ enum hrtimer_restart ac_dimmer_hrtimer_callback(struct hrtimer *timer)
 				continue;
 			}
 		}
-		
+
 		// timer setup
 		if((next_tick.tv64 == 0) || (desc->next_tick.tv64 < next_tick.tv64))
 			next_tick.tv64 = desc->next_tick.tv64;
@@ -344,7 +333,7 @@ enum hrtimer_restart ac_dimmer_hrtimer_callback(struct hrtimer *timer)
 
 	if(next_tick.tv64 > 0)
 		hrtimer_start(&hr_timer, next_tick, HRTIMER_MODE_ABS);
-	
+
 	return HRTIMER_NORESTART;
 }
 
@@ -356,17 +345,17 @@ void ac_dimmer_zc_handler(int status, void *data)
 	int freq = ac_zc_freq();
 	ktime_t now = ktime_get();
 	ktime_t next_tick = ktime_set(0,0);
-		
+
 	if(freq > 0)
 		period_cent = (NSEC_PER_SEC / 100) / freq;
-		
+
 	// timer management
 	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
 	{
 		desc = &dimmer_table[gpio];
 		if(!test_bit(FLAG_ACDIMMER, &desc->flags))
 			continue;
-		
+
 		// reset timer
 		desc->next_tick = ktime_set(0,0);
 
@@ -384,14 +373,14 @@ void ac_dimmer_zc_handler(int status, void *data)
 		// full time off or no period
 		if(desc->value == 0 || period_cent == 0)
 			continue;
-		
+
 		// timer setup
 		// max 90 else it overlaps (timer delay ?)
 		desc->next_tick = ktime_add_ns(now, min(90, (100 - desc->value)) * period_cent);
 		if((next_tick.tv64 == 0) || (desc->next_tick.tv64 < next_tick.tv64))
 			next_tick.tv64 = desc->next_tick.tv64;
 	}
-	
+
 	if(next_tick.tv64 > 0)
 		hrtimer_start(&hr_timer, next_tick, HRTIMER_MODE_ABS);
 }
@@ -402,21 +391,21 @@ int __init ac_dimmer_init(void)
 
 	int status;
 	printk(KERN_INFO "AC dimmer v0.1 initializing.\n");
-	
+
 	hrtimer_get_res(CLOCK_MONOTONIC, &tp);
 	printk(KERN_INFO "Clock resolution is %ldns\n", tp.tv_nsec);
-	
+
 	hrtimer_init(&hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hr_timer.function = &ac_dimmer_hrtimer_callback;
 
 	status = class_register(&ac_dimmer_class);
 	if(status < 0)
 		goto fail_no_class;
-	
+
 	status = ac_zc_register(AC_ZC_STATUS_ENTER, ac_dimmer_zc_handler, NULL);
 	if(status < 0)
 		goto fail_zc_register;
-	
+
 	ac_zc_id = status;
 
 	printk(KERN_INFO "AC dimmer initialized.\n");
@@ -432,7 +421,7 @@ void __exit ac_dimmer_exit(void)
 {
 	unsigned int gpio;
 	int status;
-	
+
 	ac_zc_unregister(ac_zc_id);
 
 	hrtimer_cancel(&hr_timer);

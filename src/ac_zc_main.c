@@ -75,31 +75,31 @@ int ac_zc_register(int status, ac_zc_callback cb, void *cb_data)
 	int ret;
 	unsigned int index;
 	struct ac_zc_cb_desc *desc;
-	
+
 	if(status <= 0 || status > (AC_ZC_STATUS_ENTER | AC_ZC_STATUS_LEAVE))
 		return -EINVAL;
 	if(!cb)
 		return -EINVAL;
-	
+
 	mutex_lock(&ac_zc_descriptors_lock);
-	
+
 	ret = -EBUSY; // no empty place in array
 	for(index = 0; index < ZC_DESCRIPTOR_SIZE; ++index)
 	{
 		desc = zc_descriptors + index;
 		if(desc->status)
 			continue;
-		
+
 		desc->cb = cb;
 		desc->cb_data = cb_data;
 		desc->status = status;
-		
+
 		ret = index+1;
 		break;
 	}
-	
+
 	mutex_unlock(&ac_zc_descriptors_lock);
-	
+
 	return ret;
 }
 
@@ -107,13 +107,13 @@ int ac_zc_unregister(int id)
 {
 	if(id <= 0 || id > ZC_DESCRIPTOR_SIZE)
 		return -EINVAL;
-	
+
 	mutex_lock(&ac_zc_descriptors_lock);
 
 	zc_descriptors[id-1].status = 0;
-	
+
 	mutex_unlock(&ac_zc_descriptors_lock);
-	
+
 	return 0;
 }
 
@@ -169,7 +169,7 @@ irqreturn_t ac_zc_irq_handler(int irq, void *dev_id)
 	if(gpio_value == ac_zc_gpio_previous_value)
 		return IRQ_HANDLED;
 	ac_zc_gpio_previous_value = gpio_value;
-		
+
 	//callbacks
 	status = gpio_value ? AC_ZC_STATUS_ENTER : AC_ZC_STATUS_LEAVE;
 	for(index=0; index<ZC_DESCRIPTOR_SIZE; ++index)
@@ -182,7 +182,7 @@ irqreturn_t ac_zc_irq_handler(int irq, void *dev_id)
 	// stats
 	if(!gpio_value)
 		return IRQ_HANDLED;
-		
+
 	now_secs = get_now_secs();
 	if(now_secs != ac_zc_freq_start)
 	{
@@ -191,7 +191,7 @@ irqreturn_t ac_zc_irq_handler(int irq, void *dev_id)
 		ac_zc_freq_start = now_secs;
 	}
 	++ac_zc_freq_counter;
-	
+
 	return IRQ_HANDLED;
 }
 
@@ -205,36 +205,37 @@ int __init ac_zc_init(void)
 
 	status = class_register(&ac_zc_class);
 	if(status < 0)
-		goto fail_no_class;
-	
+		goto fail_safe;
+
 	status = -EINVAL;
 	if(!gpio_is_valid(ac_zc_gpio))
-		goto fail_bad_gpio;
+		goto fail_after_class;
 
 	status = gpio_request(ac_zc_gpio, "ac_zc_gpio");
 	if(status < 0)
-		goto fail_bad_gpio;
+		goto fail_after_class;
 
 	status = gpio_direction_input(ac_zc_gpio);
 	if(status < 0)
-		goto fail_bad_gpio;
-		
+		goto fail_after_gpio;
+
 	ac_zc_irq = status = gpio_to_irq(ac_zc_gpio);
 	if(status < 0)
-		goto fail_bad_gpio;
-	
-	status = request_irq(ac_zc_irq, ac_zc_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_SHARED | IRQF_NO_THREAD, "ac_zc_gpio_irq", &ac_zc_class);  
+		goto fail_after_gpio;
+
+	status = request_irq(ac_zc_irq, ac_zc_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_SHARED | IRQF_NO_THREAD, "ac_zc_gpio_irq", &ac_zc_class);
 	if(status < 0)
-		goto fail_bad_gpio;
+		goto fail_after_gpio;
 
 	printk(KERN_INFO "zc GPIO : %d, IRQ : %d\n", ac_zc_gpio, ac_zc_irq);
 	printk(KERN_INFO "AC zc initialized.\n");
 	return 0;
 
-fail_bad_gpio:
+fail_after_gpio:
 	gpio_free(ac_zc_gpio);
+fail_after_class:
 	class_unregister(&ac_zc_class);
-fail_no_class:
+fail_safe:
 	return status;
 }
 
@@ -242,7 +243,7 @@ void __exit ac_zc_exit(void)
 {
 	free_irq(ac_zc_irq, &ac_zc_class);
 	gpio_free(ac_zc_gpio);
-	
+
 	class_unregister(&ac_zc_class);
 	printk(KERN_INFO "AC zc disabled.\n");
 }

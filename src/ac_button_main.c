@@ -24,20 +24,9 @@
 #include <linux/string.h>
 
 #include "ac_common.h"
-#include "ac_zc.h"
 
-static int ac_zc_id = -1;
-
-// Redefinition of macro to enable permissions to world
-#define __ATTR_NOCHECK(_name, _mode, _show, _store) {                   \
-        .attr = {.name = __stringify(_name),                            \
-                 .mode =_mode },                                        \
-        .show   = _show,                                                \
-        .store  = _store,                                               \
-}
-
-#define DEVICE_ATTR_NOCHECK(_name, _mode, _show, _store) \
-        struct device_attribute dev_attr_##_name = __ATTR_NOCHECK(_name, _mode, _show, _store)
+static struct hrtimer hr_timer;
+static int timer_on = 0;
 
 /* button_desc
  *
@@ -48,17 +37,16 @@ struct button_desc
 {
 	// corresponding sysfs device
 	struct device   *dev;
-	
-	// count number when zc leave and button is not viewed pressed
-	// ZC has 2 pules per period (one on the top of the wave and one at the bottom), button has only one
-	// if zero_count reach 2, then value should go to 0
-	// ZC measure low pin level, so we register on AC_ZC_STATUS_LEAVE to go to high level
-	// button measure low pin level too, so if level is 0 on AC_ZC_STATUS_LEAVE, button is pressed
-	int zero_count;
-	
+
+	// irq number
+	int irq;
+
+	// indicate if an interrupt occured between 50ms interval bounds
+	int interrupted;
+
 	// logical value
 	int value;
-	
+
 	// only FLAG_ACBUTTON is used, for synchronizing inside module
 	unsigned long flags;
 #define FLAG_ACBUTTON 1
@@ -83,7 +71,9 @@ static ssize_t button_show(struct device *dev, struct device_attribute *attr, ch
 static ssize_t export_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 
-static void ac_button_zc_handler(int status, void *data);
+static void ac_button_irq_handler(int irq, void *dev_id);
+static enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer);
+
 static int ac_button_init(void);
 static void ac_button_exit(void);
 
@@ -150,32 +140,50 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 {
 	long gpio;
 	int status;
+	int irq;
 
 	status = kstrtol(buf, 0, &gpio);
 	if(status < 0)
-		goto done;
+		goto fail_safe;
 
 	status = gpio_request(gpio, "ac_button");
 	if(status < 0)
-		goto done;
+		goto fail_safe;
 
 	status = gpio_direction_input(gpio);
 	if(status < 0)
-		goto done;
-  
+		goto fail_after_gpio;
+
+	irq = status = gpio_to_irq(gpio);
+	if(status < 0)
+		goto fail_after_gpio;
+
+	status = request_irq(irq, ac_button_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_SHARED | IRQF_NO_THREAD, "ac_button_gpio_irq", &ac_button_class);
+	if(status < 0)
+		goto fail_after_gpio;
+
 	status = button_export(gpio);
 	if(status < 0)
-		goto done;
+		goto fail_after_irq;
 
+	if(!timer_on) {
+		hrtimer_start(&hr_timer, next_tick, HRTIMER_MODE_ABS);
+		timer_on = 1;
+	}
+
+	button_table[gpio].value = 0;
+	button_table[gpio].interrupted = 0;
+	button_table[gpio].irq = irq;
 	set_bit(FLAG_ACBUTTON, &button_table[gpio].flags);
 
-done:
-	if(status)
-	{
-		gpio_free(gpio);
-		pr_debug("%s: status %d\n", __func__, status);
-	}
-	return status ? : len;
+	return len;
+
+fail_after_irq:
+	free_irq(irq, &ac_button_class);
+fail_after_gpio:
+  gpio_free(gpio);
+fail_safe:
+  return status;
 }
 
 /* Unexport a button GPIO pin from sysfs, and unreclaim it.
@@ -197,9 +205,12 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
 	if(test_and_clear_bit(FLAG_ACBUTTON, &button_table[gpio].flags))
 	{
 		status = button_unexport(gpio);
-		if(status == 0)
+		if(status == 0) {
+			free_irq(&button_table[gpio].irq, &ac_button_class);
 			gpio_free(gpio);
+		}
 	}
+
 done:
 	if(status)
 		pr_debug("%s: status %d\n", __func__, status);
@@ -245,7 +256,7 @@ int button_unexport(unsigned int gpio)
 	struct button_desc *desc;
 	struct device   *dev;
 	int             status;
-      
+
 	mutex_lock(&sysfs_lock);
 
 	desc = &button_table[gpio];
@@ -269,45 +280,53 @@ int button_unexport(unsigned int gpio)
 	return status;
 }
 
-void ac_button_zc_handler(int status, void *data)
-{
-	unsigned int gpio;
-	int gpio_value;
-	struct button_desc *desc;
-	int pressed;
-		
-	// buttons status management
+void ac_button_irq_handler(int irq, void *dev_id) {
+
+	if(dev_id != &ac_button_class)
+		return IRQ_NONE;
+
 	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
 	{
 		desc = &button_table[gpio];
 		if(!test_bit(FLAG_ACBUTTON, &desc->flags))
 			continue;
-		
-		// we are leaving ZC so we must check the button status
-		gpio_value = gpio_get_value(gpio);
-		
-		// button measure low pin level too, so if level is 0 on AC_ZC_STATUS_LEAVE, button is pressed
-		pressed = gpio_value ? 0 : 1;
-		
-		if(!pressed && desc->value)
-		{
-			++desc->zero_count;
-			
-			// ZC has 2 pules per period (one on the top of the wave and one at the bottom), button has only one
-			// if zero_count reach 2, then value should go to 0, else just wait
-			if(desc->zero_count < 2)
-				continue;
-		}
-		
-		// pressed represents now the real status (if we are not sure, continue already used)
-		if(pressed != desc->value)
+		if(irq != desc->irq)
+			continue;
+
+		desc->interrupted = 1;
+		return IRQ_HANDLED;
+	}
+
+	return IRQ_NONE;
+}
+
+enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
+{
+	int restart_timer = 0;
+
+	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
+	{
+		desc = &button_table[gpio];
+		if(!test_bit(FLAG_ACBUTTON, &desc->flags))
+			continue;
+
+		if(desc->interrupted != desc->value)
 		{
 			// changing
-			desc->value = pressed;
+			desc->value = desc->interrupted;
 			// notify change
 			sysfs_notify(&desc->dev->kobj, NULL, "value");
 		}
+
+		desc->interrupted = 0;
 	}
+
+
+	if(!restart_timer) {
+		timer_on = 0;
+	}
+
+	return restart_timer ? HRTIMER_RESTART : HRTIMER_NORESTART;
 }
 
 int __init ac_button_init(void)
@@ -315,22 +334,19 @@ int __init ac_button_init(void)
 	int status;
 	printk(KERN_INFO "AC button v0.1 initializing.\n");
 
+	hrtimer_get_res(CLOCK_MONOTONIC, &tp);
+	printk(KERN_INFO "Clock resolution is %ldns\n", tp.tv_nsec);
+
+	hrtimer_init(&hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
+	hr_timer.function = &ac_dimmer_hrtimer_callback;
+
 	status = class_register(&ac_button_class);
 	if(status < 0)
 		goto fail_no_class;
-	
-	// ZC measure low pin level, so we register on AC_ZC_STATUS_LEAVE to go to high level
-	status = ac_zc_register(AC_ZC_STATUS_LEAVE, ac_button_zc_handler, NULL);
-	if(status < 0)
-		goto fail_zc_register;
-	
-	ac_zc_id = status;
 
 	printk(KERN_INFO "AC button initialized.\n");
 	return 0;
 
-fail_zc_register:
-	class_unregister(&ac_button_class);
 fail_no_class:
 	return status;
 }
@@ -339,8 +355,8 @@ void __exit ac_button_exit(void)
 {
 	unsigned int gpio;
 	int status;
-	
-	ac_zc_unregister(ac_zc_id);
+
+	hrtimer_cancel(&hr_timer);
 
 	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
 	{
@@ -348,7 +364,6 @@ void __exit ac_button_exit(void)
 		desc = &button_table[gpio];
 		if(test_bit(FLAG_ACBUTTON, &desc->flags))
 		{
-			gpio_set_value(gpio, 0);
 			status = button_unexport(gpio);
 			if(status == 0)
 				gpio_free(gpio);
