@@ -171,8 +171,6 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 		timer_on = 1;
 	}
 
-	button_table[gpio].value = 0;
-	button_table[gpio].interrupted = 0;
 	button_table[gpio].irq = irq;
 	set_bit(FLAG_ACBUTTON, &button_table[gpio].flags);
 
@@ -227,7 +225,7 @@ int button_export(unsigned int gpio)
 	mutex_lock(&sysfs_lock);
 
 	desc = &button_table[gpio];
-	desc->zero_count = 0;
+	desc->interrupted = 0;
 	desc->value = 0;
 	desc->dev = dev = device_create(&ac_button_class, NULL, MKDEV(0, 0), desc, "button%d", gpio);
 	if(dev)
