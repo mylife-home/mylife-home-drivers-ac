@@ -71,7 +71,7 @@ static ssize_t button_show(struct device *dev, struct device_attribute *attr, ch
 static ssize_t export_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 static ssize_t unexport_store(struct class *class, struct class_attribute *attr, const char *buf, size_t len);
 
-static void ac_button_irq_handler(int irq, void *dev_id);
+static irqreturn_t ac_button_irq_handler(int irq, void *dev_id);
 static enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer);
 
 static int ac_button_init(void);
@@ -167,7 +167,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 		goto fail_after_irq;
 
 	if(!timer_on) {
-		hrtimer_start(&hr_timer, next_tick, HRTIMER_MODE_ABS);
+		hrtimer_start(&hr_timer, ktime_set(0, 50000000), HRTIMER_MODE_REL); // 50ms
 		timer_on = 1;
 	}
 
@@ -206,7 +206,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
 	{
 		status = button_unexport(gpio);
 		if(status == 0) {
-			free_irq(&button_table[gpio].irq, &ac_button_class);
+			free_irq(button_table[gpio].irq, &ac_button_class);
 			gpio_free(gpio);
 		}
 	}
@@ -280,7 +280,7 @@ int button_unexport(unsigned int gpio)
 	return status;
 }
 
-void ac_button_irq_handler(int irq, void *dev_id) {
+irqreturn_t ac_button_irq_handler(int irq, void *dev_id) {
 
 	if(dev_id != &ac_button_class)
 		return IRQ_NONE;
@@ -338,7 +338,7 @@ int __init ac_button_init(void)
 	printk(KERN_INFO "Clock resolution is %ldns\n", tp.tv_nsec);
 
 	hrtimer_init(&hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
-	hr_timer.function = &ac_dimmer_hrtimer_callback;
+	hr_timer.function = &ac_button_hrtimer_callback;
 
 	status = class_register(&ac_button_class);
 	if(status < 0)
