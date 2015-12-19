@@ -154,7 +154,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_gpio;
 
-	irq = status = gpio_to_irq(gpio);
+	status = irq = gpio_to_irq(gpio);
 	if(status < 0)
 		goto fail_after_gpio;
 
@@ -324,8 +324,8 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 		}
 
 		desc->interrupted = 0;
+		restart_timer = 1;
 	}
-
 
 	if(!restart_timer)
 		timer_on = 0;
