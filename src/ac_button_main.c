@@ -360,6 +360,7 @@ void __exit ac_button_exit(void)
 {
 	unsigned int gpio;
 	int status;
+	int irq;
 
 	hrtimer_cancel(&hr_timer);
 
@@ -369,9 +370,13 @@ void __exit ac_button_exit(void)
 		desc = &button_table[gpio];
 		if(test_bit(FLAG_ACBUTTON, &desc->flags))
 		{
+			irq = desc->irq;
 			status = button_unexport(gpio);
 			if(status == 0)
+			{
+				free_irq(irq, &ac_button_class);
 				gpio_free(gpio);
+			}
 		}
 	}
 
