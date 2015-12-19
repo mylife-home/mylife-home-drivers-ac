@@ -166,7 +166,8 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_irq;
 
-	if(!timer_on) {
+	if(!timer_on)
+	{
 		hrtimer_start(&hr_timer, ktime_set(0, 50000000), HRTIMER_MODE_REL); // 50ms
 		timer_on = 1;
 	}
@@ -203,7 +204,8 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
 	if(test_and_clear_bit(FLAG_ACBUTTON, &button_table[gpio].flags))
 	{
 		status = button_unexport(gpio);
-		if(status == 0) {
+		if(status == 0)
+		{
 			free_irq(button_table[gpio].irq, &ac_button_class);
 			gpio_free(gpio);
 		}
@@ -278,7 +280,10 @@ int button_unexport(unsigned int gpio)
 	return status;
 }
 
-irqreturn_t ac_button_irq_handler(int irq, void *dev_id) {
+irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
+{
+	unsigned int gpio;
+	struct button_desc *desc;
 
 	if(dev_id != &ac_button_class)
 		return IRQ_NONE;
@@ -300,6 +305,8 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id) {
 
 enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 {
+	unsigned int gpio;
+	struct button_desc *desc;
 	int restart_timer = 0;
 
 	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
@@ -320,15 +327,15 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 	}
 
 
-	if(!restart_timer) {
+	if(!restart_timer)
 		timer_on = 0;
-	}
 
 	return restart_timer ? HRTIMER_RESTART : HRTIMER_NORESTART;
 }
 
 int __init ac_button_init(void)
 {
+	struct timespec tp;
 	int status;
 	printk(KERN_INFO "AC button v0.1 initializing.\n");
 
