@@ -182,6 +182,7 @@ fail_after_irq:
 fail_after_gpio:
   gpio_free(gpio);
 fail_safe:
+  pr_debug("%s: status %d\n", __func__, status);
   return status;
 }
 
@@ -263,7 +264,6 @@ int button_unexport(unsigned int gpio)
 	dev  = desc->dev;
 	if(dev)
 	{
-		put_device(dev);
 		device_unregister(dev);
 		printk(KERN_INFO "Unregistered device button%d\n", gpio);
 		status = 0;
