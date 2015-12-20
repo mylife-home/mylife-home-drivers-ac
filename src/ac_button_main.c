@@ -297,10 +297,10 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 			continue;
 
 		desc->interrupted = 1;
-		return IRQ_HANDLED;
+		break;
 	}
 
-	return IRQ_NONE;
+	return IRQ_HANDLED;
 }
 
 enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
