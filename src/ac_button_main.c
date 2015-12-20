@@ -308,6 +308,7 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 	unsigned int gpio;
 	struct button_desc *desc;
 	int restart_timer = 0;
+	int interrupted;
 
 	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
 	{
@@ -315,10 +316,11 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 		if(!test_bit(FLAG_ACBUTTON, &desc->flags))
 			continue;
 
-		if(desc->interrupted != desc->value)
+		interrupted = desc->interrupted;
+		if(interrupted != desc->value)
 		{
 			// changing
-			desc->value = desc->interrupted;
+			desc->value = interrupted;
 			// notify change
 			sysfs_notify(&desc->dev->kobj, NULL, "value");
 		}
