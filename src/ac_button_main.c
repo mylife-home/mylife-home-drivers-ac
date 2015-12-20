@@ -166,14 +166,14 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_irq;
 
+	button_table[gpio].irq = irq;
+	set_bit(FLAG_ACBUTTON, &button_table[gpio].flags);
+
 	if(!timer_on)
 	{
 		hrtimer_start(&hr_timer, ktime_set(0, 50000000), HRTIMER_MODE_REL); // 50ms
 		timer_on = 1;
 	}
-
-	button_table[gpio].irq = irq;
-	set_bit(FLAG_ACBUTTON, &button_table[gpio].flags);
 
 	return len;
 
@@ -327,10 +327,15 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 		restart_timer = 1;
 	}
 
-	if(!restart_timer)
+	if(restart_timer)
+	{
+		// should use hrtimer_forward ?
+		hrtimer_start(&hr_timer, ktime_set(0, 50000000), HRTIMER_MODE_REL); // 50ms
+	}
+	else
 		timer_on = 0;
 
-	return restart_timer ? HRTIMER_RESTART : HRTIMER_NORESTART;
+	return HRTIMER_NORESTART;
 }
 
 int __init ac_button_init(void)
