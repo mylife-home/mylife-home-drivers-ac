@@ -54,6 +54,8 @@ button_restart: button_stop button_start
 
 deploy: zc_deploy dimmer_deploy button_deploy
 
+start: zc_start dimmer_start button_start
+
 deploy-boot:
 	cp mylife-home-ac.conf /etc/modules-load.d/
 
