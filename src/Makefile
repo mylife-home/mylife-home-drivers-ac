@@ -22,7 +22,7 @@ zc_stop:
 	rmmod ac_zc
 
 zc_start:
-	modprobe ac_zc ac_zc_gpio=25
+	modprobe ac_zc ac_zc_gpio=4
 
 zc_restart: zc_stop zc_start
 
