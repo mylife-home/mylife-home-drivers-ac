@@ -13,7 +13,7 @@ modules_install:
 clean:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src clean
 
-zc_deploy: modules
+zc_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
 	cp src/ac_zc.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
@@ -26,7 +26,7 @@ zc_start:
 
 zc_restart: zc_stop zc_start
 
-dimmer_deploy: modules
+dimmer_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
 	cp src/ac_dimmer.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
@@ -39,7 +39,7 @@ dimmer_start:
 
 dimmer_restart: dimmer_stop dimmer_start
 
-button_deploy: modules
+button_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
 	cp src/ac_button.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
