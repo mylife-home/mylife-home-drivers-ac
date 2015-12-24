@@ -52,8 +52,8 @@ deploy: zc_deploy dimmer_deploy button_deploy
 start: zc_start dimmer_start button_start
 
 deploy-boot:
-	cp modules-load.d_mylife-home-ac.conf /etc/modules-load.d/
-	cp modprobe.d_mylife-home-ac.conf /etc/modprobe.d/
+	cp modules-load.d_mylife-home-ac.conf /etc/modules-load.d/mylife-home-ac.conf
+	cp modprobe.d_mylife-home-ac.conf /etc/modprobe.d/mylife-home-ac.conf
 
 undeploy:
 	rmmod ac_dimmer && 0
