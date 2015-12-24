@@ -101,8 +101,8 @@ static const struct attribute_group ac_button_dev_attr_group =
 /* Sysfs definitions for ac_button class */
 static struct class_attribute ac_button_class_attrs[] =
 {
-	__ATTR_NOCHECK(export,   0222, NULL, export_store),
-	__ATTR_NOCHECK(unexport, 0222, NULL, unexport_store),
+	__ATTR_WO(export),
+	__ATTR_WO(unexport),
 	__ATTR_NULL,
 };
 static struct class ac_button_class =

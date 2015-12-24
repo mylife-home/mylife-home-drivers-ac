@@ -78,7 +78,7 @@ module_init(ac_dimmer_init);
 module_exit(ac_dimmer_exit);
 
 /* Sysfs attributes definition for dimmers */
-static DEVICE_ATTR_NOCHECK(value,   0666, dimmer_show, dimmer_store);
+static DEVICE_ATTR(value,   0664, dimmer_show, dimmer_store);
 
 static const struct attribute *ac_dimmer_dev_attrs[] =
 {
@@ -94,8 +94,8 @@ static const struct attribute_group ac_dimmer_dev_attr_group =
 /* Sysfs definitions for ac_dimmer class */
 static struct class_attribute ac_dimmer_class_attrs[] =
 {
-	__ATTR_NOCHECK(export,   0222, NULL, export_store),
-	__ATTR_NOCHECK(unexport, 0222, NULL, unexport_store),
+	__ATTR_WO(export),
+	__ATTR_WO(unexport),
 	__ATTR_NULL,
 };
 static struct class ac_dimmer_class =
