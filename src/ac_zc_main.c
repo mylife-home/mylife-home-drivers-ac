@@ -59,7 +59,7 @@ MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Vincent TRUMPFF");
 MODULE_DESCRIPTION("Driver for AC zero crossing detector");
 
-module_param(ac_zc_gpio, int, 0);
+module_param(ac_zc_gpio, int, 0444);
 MODULE_PARM_DESC(ac_zc_gpio, "Zero crossing detector GPIO number");
 
 EXPORT_SYMBOL(ac_zc_register);
