@@ -1,16 +1,16 @@
 
 modules:
-	make -C $(PWD)/src
+	make -C $(PWD)/drivers
 
 modules_install:
-	make -C $(PWD)/src modules_install
+	make -C $(PWD)/drivers modules_install
 
 clean:
-	make -C $(PWD)/src clean
+	make -C $(PWD)/drivers clean
 
 zc_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
-	cp src/ac_zc.ko /lib/modules/$(shell uname -r)/extra/
+	cp drivers/ac_zc.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 zc_stop:
@@ -23,7 +23,7 @@ zc_restart: zc_stop zc_start
 
 dimmer_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
-	cp src/ac_dimmer.ko /lib/modules/$(shell uname -r)/extra/
+	cp drivers/ac_dimmer.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 dimmer_stop:
@@ -36,7 +36,7 @@ dimmer_restart: dimmer_stop dimmer_start
 
 button_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
-	cp src/ac_button.ko /lib/modules/$(shell uname -r)/extra/
+	cp drivers/ac_button.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 button_stop:
