@@ -1,12 +1,12 @@
 
 modules:
-	make -C $(PWD)/drivers
+	(cd drivers && make)
 
 modules_install:
-	make -C $(PWD)/drivers modules_install
+	(cd drivers && make modules_install)
 
 clean:
-	make -C $(PWD)/drivers clean
+	(cd drivers && make clean)
 
 zc_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
