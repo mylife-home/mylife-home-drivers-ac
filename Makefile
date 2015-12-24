@@ -1,11 +1,6 @@
-# http://lxr.free-electrons.com/source/Documentation/kbuild/modules.txt
-obj-m = ac_zc.o ac_dimmer.o ac_button.o
-ac_zc-y := ac_zc_main.o
-ac_dimmer-y := ac_dimmer_main.o
-ac_button-y := ac_button_main.o
 
 modules:
-	make -C $(PWD)/src modules
+	make -C $(PWD)/src
 
 modules_install:
 	make -C $(PWD)/src modules_install

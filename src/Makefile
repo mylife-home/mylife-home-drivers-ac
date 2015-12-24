@@ -4,7 +4,7 @@ ac_zc-y := ac_zc_main.o
 ac_dimmer-y := ac_dimmer_main.o
 ac_button-y := ac_button_main.o
 
-modules:
+all:
 	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
 modules_install:
