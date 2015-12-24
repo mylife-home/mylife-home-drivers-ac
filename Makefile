@@ -5,13 +5,13 @@ ac_dimmer-y := ac_dimmer_main.o
 ac_button-y := ac_button_main.o
 
 modules:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src modules
+	make -C $(PWD)/src modules
 
 modules_install:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src modules_install
+	make -C $(PWD)/src modules_install
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src clean
+	make -C $(PWD)/src clean
 
 zc_deploy:
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
