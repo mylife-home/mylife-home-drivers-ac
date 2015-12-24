@@ -28,6 +28,14 @@ struct admin_def {
 
 extern struct admin_def def;
 
+#ifdef AC_BUTTON
+#include "ac_button.h"
+#endif
+
+#ifdef AC_DIMMER
+#include "ac_dimmer.h"
+#endif
+
 static void usage_error(char **argv) {
   fprintf(stderr, "usage: %s {export|unexport} <gpio>\n", argv[0]);
   exit(1);

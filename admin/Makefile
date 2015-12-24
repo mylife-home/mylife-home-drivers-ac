@@ -1,11 +1,6 @@
 CC=gcc
 CFLAGS=-Wall -O2
 
-ARCH:=$(shell uname -s)-$(shell uname -m)
-
-SRC=$(wildcard *.c)
-OBJS=$(SRC:%.c=%.o)
-
 ifndef DESTDIR
 DESTDIR=/usr/local
 endif
@@ -18,11 +13,10 @@ clean :
 .PHONY: clean
 
 ac_dimmer-admin: $(OBJS)
+	$(CC) $(CFLAGS) -DAC_DIMMER admin.c -c -o ac_dimmer-admin
 
 ac_button-admin: $(OBJS)
-
-%.o: $(SRCDIR)/%.c
-	$(CC) $(CFLAGS) $< -c -o $@
+	$(CC) $(CFLAGS) -DAC_BUTTON admin.c -c -o ac_dimmer-admin
 
 install: install-files
 	mkdir -p $(DESTDIR)/bin/
