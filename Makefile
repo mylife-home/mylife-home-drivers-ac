@@ -4,18 +4,18 @@ ac_zc-y := ac_zc_main.o
 ac_dimmer-y := ac_dimmer_main.o
 ac_button-y := ac_button_main.o
 
-all:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
+modules:
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src modules
 
-install:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules_install
+modules_install:
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src modules_install
 
 clean:
-	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD)/src clean
 
-zc_deploy:
+zc_deploy: modules
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
-	cp ac_zc.ko /lib/modules/$(shell uname -r)/extra/
+	cp src/ac_zc.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 zc_stop:
@@ -26,9 +26,9 @@ zc_start:
 
 zc_restart: zc_stop zc_start
 
-dimmer_deploy:
+dimmer_deploy: modules
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
-	cp ac_dimmer.ko /lib/modules/$(shell uname -r)/extra/
+	cp src/ac_dimmer.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 dimmer_stop:
@@ -39,9 +39,9 @@ dimmer_start:
 
 dimmer_restart: dimmer_stop dimmer_start
 
-button_deploy:
+button_deploy: modules
 	mkdir -p /lib/modules/$(shell uname -r)/extra/
-	cp ac_button.ko /lib/modules/$(shell uname -r)/extra/
+	cp src/ac_button.ko /lib/modules/$(shell uname -r)/extra/
 	depmod -a
 
 button_stop:
@@ -57,7 +57,8 @@ deploy: zc_deploy dimmer_deploy button_deploy
 start: zc_start dimmer_start button_start
 
 deploy-boot:
-	cp mylife-home-ac.conf /etc/modules-load.d/
+	cp modules-load.d_mylife-home-ac.conf /etc/modules-load.d/
+	cp modprobe.d_mylife-home-ac.conf /etc/modprobe.d/
 
 undeploy:
 	rmmod ac_dimmer && 0
