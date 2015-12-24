@@ -1,5 +1,5 @@
 
-struct admin_def def {
+struct admin_def def = {
   .class = "ac_dimmer",
   .object_prefix = "dimmer",
   .attrs = {
