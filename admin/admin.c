@@ -1,5 +1,5 @@
 /*
- * from: https://github.com/quick2wire/quick2wire-gpio-admin/blob/master/src/gpio-admin.c
+ * from: https://github.com/quick2wire/quick2wire-gpio-admin
  */
 
 #include <stdlib.h>
@@ -15,28 +15,34 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-#define GPIO_CLASS_PATH "/sys/class/gpio/"
-#define GPIO_EXPORT_PATH (GPIO_CLASS_PATH "export")
-#define GPIO_UNEXPORT_PATH (GPIO_CLASS_PATH "unexport")
+struct admin_attr {
+  const char *name;
+  int writable;
+};
+
+struct admin_def {
+  const char *class;
+  const char *object_prefix;
+  struct admin_attr* attrs;
+};
+
+extern struct admin_def def;
 
 static void usage_error(char **argv) {
-  fprintf(stderr, "usage: %s {export|unexport} <gpio-pin>\n", argv[0]);
+  fprintf(stderr, "usage: %s {export|unexport} <gpio>\n", argv[0]);
   exit(1);
 }
 
-static void allow_access_by_user(unsigned int pin, const char *filename) {
+static void allow_access_by_user(unsigned int pin, const struct admin_attr *attr) {
   char path[PATH_MAX];
-  int size = snprintf(path, PATH_MAX, "/sys/devices/virtual/gpio/gpio%u/%s", pin, filename);
+  int size = snprintf(path, PATH_MAX, "/sys/class/%s/%s%u/%s",
+    def.class, def.object_prefix, pin, attr->name);
 
   if (size >= PATH_MAX) {
-    error(7, 0, "path of GPIO pin is too long!");
+    error(7, 0, "path too long!");
   }
 
-  if (chown(path, getuid(), getgid()) != 0) {
-    error(5, errno, "failed to change group ownership of %s", path);
-  }
-
-  if (chmod(path, S_IRUSR|S_IWUSR) != 0) {
+  if (chmod(path, attr->writable ? (S_IROTH|S_IWOTH) : S_IROTH) != 0) {
     error(6, errno, "failed to set permissions of %s", path);
   }
 }
@@ -58,7 +64,15 @@ static unsigned int parse_gpio_pin(const char *pin_str) {
   return pin;
 }
 
-static void write_pin_to_path(const char *path, unsigned int pin) {
+static void write_pin_to_export(const char *export, unsigned int pin) {
+  char path[PATH_MAX];
+  int size = snprintf(path, PATH_MAX, "/sys/class/%s/%s",
+    def.class, export);
+
+  if (size >= PATH_MAX) {
+    error(7, 0, "path too long!");
+  }
+
   FILE * out = fopen(path, "w");
 
   if (out == NULL) {
@@ -85,14 +99,13 @@ int main(int argc, char **argv) {
   unsigned int pin = parse_gpio_pin(pin_str);
 
   if (strcmp(command, "export") == 0) {
-    write_pin_to_path(GPIO_EXPORT_PATH, pin);
-    allow_access_by_user(pin, "direction");
-    allow_access_by_user(pin, "value");
-    allow_access_by_user(pin, "active_low");
-    allow_access_by_user(pin, "edge");
+    write_pin_to_export("export", pin);
+    for(struct admin_attr *attr = def.attrs; attr; ++attr) {
+      allow_access_by_user(pin, attr);
+    }
   }
   else if (strcmp(command, "unexport") == 0) {
-    write_pin_to_path(GPIO_UNEXPORT_PATH, pin);
+    write_pin_to_export("unexport", pin);
   }
   else {
     usage_error(argv);
