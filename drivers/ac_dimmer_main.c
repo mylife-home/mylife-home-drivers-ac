@@ -78,7 +78,7 @@ module_init(ac_dimmer_init);
 module_exit(ac_dimmer_exit);
 
 /* Sysfs attributes definition for dimmers */
-static DEVICE_ATTR(value,   0664, dimmer_show, dimmer_store);
+static DEVICE_ATTR(value,   0644, dimmer_show, dimmer_store);
 
 static const struct attribute *ac_dimmer_dev_attrs[] =
 {
