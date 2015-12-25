@@ -26,3 +26,6 @@
 *.exe
 *.out
 *.app
+
+admin/ac_button-admin
+admin/ac_dimmer-admin
