@@ -9,11 +9,17 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <error.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
 #include <sys/mman.h>
+
+#ifdef _LIBC
+#include <error.h>
+#else
+ // TODO: better
+#define error(status, err, args...) { printf(args); if(status > 0) { exit(status); } }
+#endif
 
 struct admin_attr {
   const char *name;
@@ -23,7 +29,7 @@ struct admin_attr {
 struct admin_def {
   const char *class;
   const char *object_prefix;
-  struct admin_attr* attrs;
+  struct admin_attr** attrs;
 };
 
 extern struct admin_def def;
@@ -108,7 +114,7 @@ int main(int argc, char **argv) {
 
   if (strcmp(command, "export") == 0) {
     write_pin_to_export("export", pin);
-    for(struct admin_attr *attr = def.attrs; attr; ++attr) {
+    for(struct admin_attr *attr = *(def.attrs); attr; ++attr) {
       allow_access_by_user(pin, attr);
     }
   }

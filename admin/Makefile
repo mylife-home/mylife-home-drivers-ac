@@ -13,10 +13,10 @@ clean :
 .PHONY: clean
 
 ac_dimmer-admin: $(OBJS)
-	$(CC) $(CFLAGS) -DAC_DIMMER admin.c -c -o ac_dimmer-admin
+	$(CC) $(CFLAGS) -DAC_DIMMER admin.c -o ac_dimmer-admin
 
 ac_button-admin: $(OBJS)
-	$(CC) $(CFLAGS) -DAC_BUTTON admin.c -c -o ac_dimmer-admin
+	$(CC) $(CFLAGS) -DAC_BUTTON admin.c -o ac_button-admin
 
 install: install-files
 	mkdir -p $(DESTDIR)/bin/
