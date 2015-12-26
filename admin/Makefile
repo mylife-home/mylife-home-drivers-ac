@@ -20,10 +20,10 @@ ac_button-admin: admin.c ac_button.h
 
 install: all
 	mkdir -p $(DESTDIR)/bin/
-	install $(OUTDIR)/ac_dimmer-admin $(DESTDIR)/bin/
+	install ac_dimmer-admin $(DESTDIR)/bin/
 	chown root:root $(DESTDIR)/bin/ac_dimmer-admin
 	chmod +s $(DESTDIR)/bin/ac_dimmer-admin
-	install $(OUTDIR)/ac_button-admin $(DESTDIR)/bin/
+	install ac_button-admin $(DESTDIR)/bin/
 	chown root:root $(DESTDIR)/bin/ac_button-admin
 	chmod +s $(DESTDIR)/bin/ac_button-admin
 .PHONY: install
