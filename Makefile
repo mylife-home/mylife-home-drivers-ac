@@ -47,7 +47,13 @@ button_start:
 
 button_restart: button_stop button_start
 
-deploy: zc_deploy dimmer_deploy button_deploy
+admin_deploy:
+	(cd admin && make install)
+
+admin_undeploy:
+	(cd admin && make uninstall)
+
+deploy: zc_deploy dimmer_deploy button_deploy admin_deploy
 
 stop: dimmer_stop button_stop zc_stop
 
@@ -59,7 +65,7 @@ deploy-boot:
 	cp modules-load.d_mylife-home-ac.conf /etc/modules-load.d/mylife-home-ac.conf
 	cp modprobe.d_mylife-home-ac.conf /etc/modprobe.d/mylife-home-ac.conf
 
-undeploy:
+undeploy: admin_undeploy
 	rmmod ac_dimmer && 0
 	rmmod ac_button && 0
 	rmmod ac_zc && 0

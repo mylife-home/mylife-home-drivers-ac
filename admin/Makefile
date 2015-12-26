@@ -18,7 +18,7 @@ ac_dimmer-admin: admin.c ac_dimmer.h
 ac_button-admin: admin.c ac_button.h
 	$(CC) $(CFLAGS) -DAC_BUTTON admin.c -o ac_button-admin
 
-install: install-files
+install: all
 	mkdir -p $(DESTDIR)/bin/
 	install $(OUTDIR)/ac_dimmer-admin $(DESTDIR)/bin/
 	chown root:root $(DESTDIR)/bin/ac_dimmer-admin
