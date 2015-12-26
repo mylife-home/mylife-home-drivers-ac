@@ -9,17 +9,11 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <error.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdint.h>
 #include <sys/mman.h>
-
-#ifdef _LIBC
-#include <error.h>
-#else
- // TODO: better
-#define error(status, err, args...) { printf(args); if(status > 0) { exit(status); } }
-#endif
 
 struct admin_attr {
   const char *name;
