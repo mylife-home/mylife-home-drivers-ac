@@ -47,7 +47,7 @@ static void allow_access_by_user(unsigned int pin, const char *attr_name) {
     error(7, 0, "path too long!");
   }
 
-  if(fstat(path, &stat_data)) {
+  if(stat(path, &stat_data)) {
     error(6, errno, "failed to get permissions of %s", path);
   }
 
