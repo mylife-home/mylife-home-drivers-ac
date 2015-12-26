@@ -60,7 +60,7 @@ static void allow_access_by_user(unsigned int pin, const char *attr_name) {
     mode |= S_IWUSR | S_IWGRP | S_IWOTH;
   }
 
-  if (chmod(path, mode != 0) {
+  if (chmod(path, mode != 0)) {
     error(6, errno, "failed to set permissions of %s", path);
   }
 }
@@ -118,7 +118,7 @@ int main(int argc, char **argv) {
 
   if (strcmp(command, "export") == 0) {
     write_pin_to_export("export", pin);
-    for(struct admin_attr **attr = def.attrs; *attr; ++attr) {
+    for(const char **attr = def.attrs; *attr; ++attr) {
       allow_access_by_user(pin, *attr);
     }
   }
