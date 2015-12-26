@@ -15,15 +15,10 @@
 #include <stdint.h>
 #include <sys/mman.h>
 
-struct admin_attr {
-  const char *name;
-  int writable;
-};
-
 struct admin_def {
   const char *class;
   const char *object_prefix;
-  struct admin_attr** attrs;
+  const char **attrs;
 };
 
 extern struct admin_def def;
@@ -41,16 +36,31 @@ static void usage_error(char **argv) {
   exit(1);
 }
 
-static void allow_access_by_user(unsigned int pin, const struct admin_attr *attr) {
+static void allow_access_by_user(unsigned int pin, const char *attr_name) {
   char path[PATH_MAX];
+  struct stat stat_data;
+
   int size = snprintf(path, PATH_MAX, "/sys/class/%s/%s%u/%s",
-    def.class, def.object_prefix, pin, attr->name);
+    def.class, def.object_prefix, pin, attr_name);
 
   if (size >= PATH_MAX) {
     error(7, 0, "path too long!");
   }
 
-  if (chmod(path, attr->writable ? (S_IROTH|S_IWOTH) : S_IROTH) != 0) {
+  if(fstat(path, &stat_data)) {
+    error(6, errno, "failed to get permissions of %s", path);
+  }
+
+  mode_t mode = 0;
+  if(stat_data.st_mode & S_IRUSR) {
+    mode |= S_IRUSR | S_IRGRP | S_IROTH;
+  }
+
+  if(stat_data.st_mode & S_IWUSR) {
+    mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+  }
+
+  if (chmod(path, mode != 0) {
     error(6, errno, "failed to set permissions of %s", path);
   }
 }
