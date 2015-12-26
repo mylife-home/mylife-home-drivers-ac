@@ -12,10 +12,10 @@ clean :
 	rm -rf *.o ac_dimmer-admin ac_button-admin
 .PHONY: clean
 
-ac_dimmer-admin: $(OBJS)
+ac_dimmer-admin: admin.c ac_dimmer.h
 	$(CC) $(CFLAGS) -DAC_DIMMER admin.c -o ac_dimmer-admin
 
-ac_button-admin: $(OBJS)
+ac_button-admin: admin.c ac_button.h
 	$(CC) $(CFLAGS) -DAC_BUTTON admin.c -o ac_button-admin
 
 install: install-files
