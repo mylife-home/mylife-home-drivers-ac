@@ -108,8 +108,8 @@ int main(int argc, char **argv) {
 
   if (strcmp(command, "export") == 0) {
     write_pin_to_export("export", pin);
-    for(struct admin_attr *attr = *(def.attrs); attr; ++attr) {
-      allow_access_by_user(pin, attr);
+    for(struct admin_attr **attr = def.attrs; *attr; ++attr) {
+      allow_access_by_user(pin, *attr);
     }
   }
   else if (strcmp(command, "unexport") == 0) {
