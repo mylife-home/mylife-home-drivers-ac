@@ -53,14 +53,14 @@ static void allow_access_by_user(unsigned int pin, const char *attr_name) {
 
   mode_t mode = 0;
   if(stat_data.st_mode & S_IRUSR) {
-    mode |= S_IRUSR | S_IRGRP | S_IROTH;
+    mode |= (S_IRUSR | S_IRGRP | S_IROTH);
   }
 
   if(stat_data.st_mode & S_IWUSR) {
-    mode |= S_IWUSR | S_IWGRP | S_IWOTH;
+    mode |= (S_IWUSR | S_IWGRP | S_IWOTH);
   }
 
-  if (chmod(path, mode != 0)) {
+  if (chmod(path, mode) != 0) {
     error(6, errno, "failed to set permissions of %s", path);
   }
 }
