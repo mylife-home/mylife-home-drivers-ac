@@ -295,6 +295,8 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 			continue;
 		if(irq != desc->irq)
 			continue;
+		if(!gpio_get_value(gpio))
+			continue;
 
 		desc->interrupted = 1;
 		break;
