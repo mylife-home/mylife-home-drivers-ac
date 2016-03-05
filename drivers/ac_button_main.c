@@ -295,7 +295,7 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 			continue;
 		if(irq != desc->irq)
 			continue;
-		if(!gpio_get_value(gpio))
+		if(gpio_get_value(gpio)) // connected with pull-up
 			continue;
 
 		desc->interrupted = 1;
