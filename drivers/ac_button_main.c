@@ -158,7 +158,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_gpio;
 
-	status = request_irq(irq, ac_button_irq_handler, /*IRQF_TRIGGER_FALLING |*/ IRQF_TRIGGER_RISING | IRQF_NO_THREAD, "ac_button_gpio_irq", &ac_button_class);
+	status = request_irq(irq, ac_button_irq_handler, IRQ_TYPE_EDGE_BOTH/*IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_THREAD*/, "ac_button_gpio_irq", &ac_button_class);
 	if(status < 0)
 		goto fail_after_gpio;
 
