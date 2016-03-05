@@ -158,7 +158,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_gpio;
 
-	status = request_irq(irq, ac_button_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_SHARED | IRQF_NO_THREAD, "ac_button_gpio_irq", &ac_button_class);
+	status = request_irq(irq, ac_button_irq_handler, IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_THREAD, "ac_button_gpio_irq", &ac_button_class);
 	if(status < 0)
 		goto fail_after_gpio;
 
@@ -295,8 +295,8 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 			continue;
 		if(irq != desc->irq)
 			continue;
-		if(gpio_get_value(gpio)) // connected with pull-up
-			continue;
+		//if(gpio_get_value(gpio)) // connected with pull-up
+		//	continue;
 
 		desc->interrupted = 1;
 		break;
