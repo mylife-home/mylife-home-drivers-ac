@@ -295,6 +295,8 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 	if(desc >= &button_table[ARCH_NR_GPIOS])
 		return IRQ_NONE;
 
+	gpio = desc - button_table;
+
 	if(!test_bit(FLAG_ACBUTTON, &desc->flags))
 		return IRQ_NONE; // paranoia
 
