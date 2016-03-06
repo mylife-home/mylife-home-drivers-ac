@@ -141,10 +141,13 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	long gpio;
 	int status;
 	int irq;
+	struct button_desc *desc;
 
 	status = kstrtol(buf, 0, &gpio);
 	if(status < 0)
 		goto fail_safe;
+
+	desc = &button_table[gpio];
 
 	status = gpio_request(gpio, "ac_button");
 	if(status < 0)
@@ -158,7 +161,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_gpio;
 
-	status = request_irq(irq, ac_button_irq_handler, IRQ_TYPE_EDGE_BOTH/*IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_THREAD*/, "ac_button_gpio_irq", &ac_button_class);
+	status = request_irq(irq, ac_button_irq_handler, IRQ_TYPE_EDGE_BOTH/*IRQF_TRIGGER_FALLING | IRQF_TRIGGER_RISING | IRQF_NO_THREAD*/, "ac_button_gpio_irq", desc);
 	if(status < 0)
 		goto fail_after_gpio;
 
@@ -166,7 +169,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	if(status < 0)
 		goto fail_after_irq;
 
-	button_table[gpio].irq = irq;
+	desc->irq = irq;
 	set_bit(FLAG_ACBUTTON, &button_table[gpio].flags);
 
 	if(!timer_on)
@@ -178,7 +181,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 	return len;
 
 fail_after_irq:
-	free_irq(irq, &ac_button_class);
+	free_irq(irq, desc);
 fail_after_gpio:
   gpio_free(gpio);
 fail_safe:
@@ -285,22 +288,19 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 	unsigned int gpio;
 	struct button_desc *desc;
 
-	if(dev_id != &ac_button_class)
+	desc = dev_id;
+
+	if(desc < &button_table[0])
+		return IRQ_NONE;
+	if(desc >= &button_table[ARCH_NR_GPIOS])
 		return IRQ_NONE;
 
-	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
-	{
-		desc = &button_table[gpio];
-		if(!test_bit(FLAG_ACBUTTON, &desc->flags))
-			continue;
-		if(irq != desc->irq)
-			continue;
+	if(!test_bit(FLAG_ACBUTTON, &desc->flags))
+		return IRQ_NONE; // paranoia
 
-		gpio_get_value(gpio);
+	gpio_get_value(gpio);
 
-		desc->interrupted = 1;
-		break;
-	}
+	desc->interrupted = 1;
 
 	return IRQ_HANDLED;
 }
@@ -383,7 +383,7 @@ void __exit ac_button_exit(void)
 			status = button_unexport(gpio);
 			if(status == 0)
 			{
-				free_irq(irq, &ac_button_class);
+				free_irq(irq, desc);
 				gpio_free(gpio);
 			}
 		}
