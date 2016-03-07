@@ -47,6 +47,8 @@ struct button_desc
 	// previous gpio value
 	int gpio_previous_value;
 
+	int previous_range_value;
+
 	// logical value
 	int value;
 
@@ -237,6 +239,7 @@ int button_export(unsigned int gpio)
 	desc->interrupted = 0;
 	desc->value = 0;
 	desc->gpio_previous_value = 0;
+	desc->previous_range_value = 0;
 	desc->dev = dev = device_create(&ac_button_class, NULL, MKDEV(0, 0), desc, "button%d", gpio);
 	if(dev)
 	{
@@ -329,7 +332,7 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 			continue;
 
 		interrupted = desc->interrupted;
-		if(interrupted != desc->value)
+		if((interrupted != desc->value) && (interrupted == desc->previous_range_value)) //need 2 consecutive ranges to trigger (remove noise)
 		{
 			// changing
 			desc->value = interrupted;
@@ -337,6 +340,7 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 			sysfs_notify(&desc->dev->kobj, NULL, "value");
 		}
 
+		desc->previous_range_value = interrupted;
 		desc->interrupted = 0;
 		restart_timer = 1;
 	}
