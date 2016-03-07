@@ -44,6 +44,9 @@ struct button_desc
 	// indicate if an interrupt occured between 50ms interval bounds
 	int interrupted;
 
+	// previous gpio value
+	int gpio_previous_value;
+
 	// logical value
 	int value;
 
@@ -233,6 +236,7 @@ int button_export(unsigned int gpio)
 	desc = &button_table[gpio];
 	desc->interrupted = 0;
 	desc->value = 0;
+	desc->gpio_previous_value = 0;
 	desc->dev = dev = device_create(&ac_button_class, NULL, MKDEV(0, 0), desc, "button%d", gpio);
 	if(dev)
 	{
@@ -287,6 +291,7 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 {
 	unsigned int gpio;
 	struct button_desc *desc;
+	int gpio_value;
 
 	desc = dev_id;
 
@@ -300,7 +305,10 @@ irqreturn_t ac_button_irq_handler(int irq, void *dev_id)
 	if(!test_bit(FLAG_ACBUTTON, &desc->flags))
 		return IRQ_NONE; // paranoia
 
-	gpio_get_value(gpio);
+	gpio_value = gpio_get_value(gpio);
+	if(gpio_value == desc->gpio_previous_value)
+		return IRQ_HANDLED;
+	desc->gpio_previous_value = gpio_value;
 
 	desc->interrupted = 1;
 
