@@ -25,6 +25,8 @@
 
 #include "ac_common.h"
 
+#define MIN_RANGE_COUNT 2
+
 static struct hrtimer hr_timer;
 static int timer_on = 0;
 
@@ -47,7 +49,8 @@ struct button_desc
 	// previous gpio value
 	int gpio_previous_value;
 
-	int previous_range_value;
+	// count of contigus time range where an interrupt occured (avoid noise)
+	int interrupted_range_count;
 
 	// logical value
 	int value;
@@ -239,7 +242,7 @@ int button_export(unsigned int gpio)
 	desc->interrupted = 0;
 	desc->value = 0;
 	desc->gpio_previous_value = 0;
-	desc->previous_range_value = 0;
+	desc->interrupted_range_count = 0;
 	desc->dev = dev = device_create(&ac_button_class, NULL, MKDEV(0, 0), desc, "button%d", gpio);
 	if(dev)
 	{
@@ -324,6 +327,7 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 	struct button_desc *desc;
 	int restart_timer = 0;
 	int interrupted;
+	int value;
 
 	for(gpio=0; gpio<ARCH_NR_GPIOS; gpio++)
 	{
@@ -332,16 +336,23 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 			continue;
 
 		interrupted = desc->interrupted;
-		if((interrupted != desc->value) && (interrupted == desc->previous_range_value)) //need 2 consecutive ranges to trigger (remove noise)
+		desc->interrupted = 0;
+
+		if(interrupted) {
+			++desc->interrupted_range_count;
+			value = desc->interrupted_range_count >= MIN_RANGE_COUNT ? 1 : 0;
+		} else {
+			value = desc->interrupted_range_count = 0;
+		}
+
+		if(value != desc->value)
 		{
 			// changing
-			desc->value = interrupted;
+			desc->value = value;
 			// notify change
 			sysfs_notify(&desc->dev->kobj, NULL, "value");
 		}
 
-		desc->previous_range_value = interrupted;
-		desc->interrupted = 0;
 		restart_timer = 1;
 	}
 
