@@ -178,7 +178,7 @@ ssize_t export_store(struct class *class, struct class_attribute *attr, const ch
 		goto fail_after_irq;
 
 	desc->irq = irq;
-	set_bit(FLAG_ACBUTTON, &button_table[gpio].flags);
+	set_bit(FLAG_ACBUTTON, &desc->flags);
 
 	if(!timer_on)
 	{
@@ -204,6 +204,7 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
 {
 	long gpio;
 	int  status;
+	struct button_desc *desc;
 
 	status = kstrtol(buf, 0, &gpio);
 	if(status < 0)
@@ -213,12 +214,14 @@ ssize_t unexport_store(struct class *class, struct class_attribute *attr, const 
 	if(!gpio_is_valid(gpio))
 		goto done;
 
-	if(test_and_clear_bit(FLAG_ACBUTTON, &button_table[gpio].flags))
+	desc = &button_table[gpio];
+
+	if(test_and_clear_bit(FLAG_ACBUTTON, &desc->flags))
 	{
 		status = button_unexport(gpio);
 		if(status == 0)
 		{
-			free_irq(button_table[gpio].irq, &ac_button_class);
+			free_irq(desc->irq, desc);
 			gpio_free(gpio);
 		}
 	}
