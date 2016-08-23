@@ -360,11 +360,11 @@ void ac_dimmer_zc_handler(int status, void *data)
 		desc->next_tick = ktime_set(0,0);
 
 		// full time on
-		//if(desc->value == 100)
-		//{
-		//	gpio_set_value(gpio, 1);
-		//	continue;
-		//}
+		if(desc->value == 100)
+		{
+			gpio_set_value(gpio, 1);
+			continue;
+		}
 
 		// period start low
 		gpio_set_value(gpio, 0);
