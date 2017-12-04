@@ -372,12 +372,8 @@ enum hrtimer_restart ac_button_hrtimer_callback(struct hrtimer *timer)
 
 int __init ac_button_init(void)
 {
-	struct timespec tp;
 	int status;
 	printk(KERN_INFO "AC button v0.1 initializing.\n");
-
-	hrtimer_get_res(CLOCK_MONOTONIC, &tp);
-	printk(KERN_INFO "Clock resolution is %ldns\n", tp.tv_nsec);
 
 	hrtimer_init(&hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hr_timer.function = &ac_button_hrtimer_callback;
