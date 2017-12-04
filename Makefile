@@ -73,3 +73,4 @@ undeploy: admin_undeploy
 	rm -f /lib/modules/$(shell uname -r)/extra/ac_dimmer.ko
 	rm -f /lib/modules/$(shell uname -r)/extra/ac_zc.ko
 	rm -f /etc/modules-load.d/mylife-home-ac.conf
+	rm -f /etc/modprobe.d/mylife-home-ac.conf
