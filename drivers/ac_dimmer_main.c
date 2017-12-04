@@ -387,13 +387,8 @@ void ac_dimmer_zc_handler(int status, void *data)
 
 int __init ac_dimmer_init(void)
 {
-	struct timespec tp;
-
 	int status;
 	printk(KERN_INFO "AC dimmer v0.1 initializing.\n");
-
-	hrtimer_get_res(CLOCK_MONOTONIC, &tp);
-	printk(KERN_INFO "Clock resolution is %ldns\n", tp.tv_nsec);
 
 	hrtimer_init(&hr_timer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
 	hr_timer.function = &ac_dimmer_hrtimer_callback;
